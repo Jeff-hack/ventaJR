@@ -1,0 +1,8 @@
+{
+  "name":"JR Ventas",
+  "short_name":"JRVentas",
+  "display":"standalone",
+  "start_url":"./",
+  "background_color":"#0a3d2e",
+  "theme_color":"#0a3d2e"
+}
