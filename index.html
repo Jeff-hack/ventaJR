@@ -1,770 +1,1341 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0a3d2e">
-<title>Control de Ventas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<!-- Estilos -->
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div id="app">
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  <div class="header">
-    <div class="header-left">
-      <div class="logo">JR</div>
-      <div>
-        <div class="header-title">Control de Negocio</div>
-        <div class="header-sub">Ventas Diarias</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="syncIndicator" style="font-size:10px;font-weight:600;color:var(--text3)">⚡ Local</span>
-      <button class="date-btn" onclick="openFondoModal()" title="Efectivo del día">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        <span id="fondoLabel">$0.00</span>
-      </button>
-      <button class="date-btn" onclick="openDateModal()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span id="headerDate"></span>
-      </button>
-    </div>
-  </div>
+:root {
+  --bg: #f4f1eb;
+  --surface: #fff;
+  --surface2: #f9f7f3;
+  --primary: #0a3d2e;
+  --primary-l: #e8f7f1;
+  --text: #1a1a1a;
+  --text2: #5a5a5a;
+  --text3: #9a9a9a;
+  --border: #e2ddd5;
+  --green: #1d9e75;
+  --red: #d44f2e;
+  --orange: #e8a020;
+  --gold: #c4860a;
+  --blue: #2563eb;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
 
-  <div class="pages">
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
 
-    <!-- ══ RESUMEN ══ -->
-    <div class="page active" id="page-resumen">
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+}
 
-      <!-- Ventas y gastos del día -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#e8f7f1">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d9e75" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            Ventas Hoy
-          </div>
-          <div class="stat-value" id="totalVentas" style="color:var(--green)">$0.00</div>
-          <div class="stat-sub" id="cntVentas">0 transacciones</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#fdeee9">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d44f2e" stroke-width="2.5"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            </div>
-            Gastos Hoy
-          </div>
-          <div class="stat-value" id="totalGastos" style="color:var(--red)">$0.00</div>
-          <div class="stat-sub" id="cntGastos">0 egresos</div>
-        </div>
-      </div>
+.pages {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
 
-      <!-- Ventas y gastos de la semana -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#e8f7f1">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d9e75" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
-            Ventas Semana
-          </div>
-          <div class="stat-value" id="semVentasCard" style="color:var(--green)">$0.00</div>
-          <div class="stat-sub" id="cntSemVentas">0 transacciones</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#fdeee9">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d44f2e" stroke-width="2.5"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            </div>
-            Gastos Semana
-          </div>
-          <div class="stat-value" id="semGastosCard" style="color:var(--red)">$0.00</div>
-          <div class="stat-sub" id="cntSemGastos">0 egresos</div>
-        </div>
-      </div>
+/* HEADER */
+.header {
+  background: var(--primary);
+  color: #fff;
+  padding: 16px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
 
-      <!-- ★ RESUMEN SEMANAL -->
-      <div class="semana-card">
-        <div class="semana-header">
-          <div class="semana-title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Esta semana
-          </div>
-          <span id="semanaRango" style="font-size:10px;color:var(--text3)"></span>
-        </div>
-        <div class="semana-body">
-          <div class="semana-stat">
-            <div class="semana-stat-label">Ventas</div>
-            <div class="semana-stat-value" id="semVentas" style="color:var(--green)">$0</div>
-          </div>
-          <div class="semana-stat">
-            <div class="semana-stat-label">Gastos</div>
-            <div class="semana-stat-value" id="semGastos" style="color:var(--red)">$0</div>
-          </div>
-          <div class="semana-stat">
-            <div class="semana-stat-label">Balance</div>
-            <div class="semana-stat-value" id="semBalance">$0</div>
-          </div>
-        </div>
-        <!-- mini barras diarias -->
-        <div class="semana-days" id="semanaDays"></div>
-      </div>
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-      <!-- Ganancia bruta + neta -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#fef0d9">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c4860a" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            </div>
-            Ganancia Bruta
-          </div>
-          <div class="stat-value" id="gananciaDia" style="color:var(--gold)">$0.00</div>
-          <div class="stat-sub" id="gananciaBrutaSub">Margen venta−costo del mes</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">
-            <div class="stat-icon" style="background:#e8f7f1">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1d9e75" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            </div>
-            Ganancia Neta
-          </div>
-          <div class="stat-value" id="gananciaNeta" style="color:var(--green)">$0.00</div>
-          <div class="stat-sub" id="gananciaNetaSub">Bruta − gastos operativos</div>
-        </div>
-      </div>
+.logo {
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 15px;
+}
 
-      <!-- Fondo inicial (histórico fijo) -->
-      <div class="card" id="fondoInicialCard" style="padding:14px 16px">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:36px;height:36px;border-radius:10px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-            </div>
-            <div>
-              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:2px">Fondo Inicial del Negocio</div>
-              <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:600;color:#7c3aed" id="fondoInicialDisplay">—</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:2px" id="fondoInicialFecha">Aún no registrado</div>
-            </div>
-          </div>
-          <div id="fondoInicialAccion">
-            <button onclick="openFondoInicialModal()" style="background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Registrar</button>
-          </div>
-        </div>
-      </div>
+.header-title {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 1px;
+}
 
-      <!-- Balance neto del día -->
-      <div class="balance-card">
-        <div class="balance-label">Balance Neto del Día</div>
-        <div class="balance-value" id="balanceNeto">$0.00</div>
-        <div class="balance-meta">
-          <span>Meta diaria</span>
-          <span class="balance-tag" id="balanceTag">Neutro</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-        <div class="balance-meta" style="margin-top:6px">
-          <span id="metaText">0% de meta ($500.00)</span>
-        </div>
-      </div>
+.header-sub {
+  font-size: 16px;
+  font-weight: 600;
+}
 
-      <!-- Pedidos especiales resumen -->
-      <div class="card">
-        <div class="card-section-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-          Pedidos especiales de hoy
-        </div>
-        <div class="pedido-item">
-          <div style="display:flex;align-items:center"><div class="pedido-dot" style="background:#e8a020"></div><div class="pedido-name">Pollo Rico</div></div>
-          <div class="pedido-val" style="color:var(--orange)" id="sumPolloRico">$0.00</div>
-        </div>
-        <div class="pedido-item">
-          <div style="display:flex;align-items:center"><div class="pedido-dot" style="background:#d44f2e"></div><div class="pedido-name">Pollo Indio</div></div>
-          <div class="pedido-val" style="color:var(--red)" id="sumPolloIndio">$0.00</div>
-        </div>
-        <div class="pedido-item" style="margin-bottom:0">
-          <div style="display:flex;align-items:center"><div class="pedido-dot" style="background:#c4860a"></div><div class="pedido-name">Sello de Oro</div></div>
-          <div class="pedido-val" style="color:var(--gold)" id="sumSelloOro">$0.00</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);margin-top:6px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text2)">Total pedidos del día</div>
-          <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--primary)" id="totalPedidosDia">$0.00</div>
-        </div>
-      </div>
+.date-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-      <!-- Gráfico -->
-      <div class="card">
-        <div class="chart-title">Distribución Financiera</div>
-        <div class="bar-chart">
-          <div class="bar-wrap"><div class="bar" id="bVentas" style="background:#1d9e75;height:4px"></div><div class="bar-label">Ventas</div></div>
-          <div class="bar-wrap"><div class="bar" id="bGastos" style="background:#d44f2e;height:4px"></div><div class="bar-label">Gastos</div></div>
-          <div class="bar-wrap"><div class="bar" id="bPollo" style="background:#e8a020;height:4px"></div><div class="bar-label">P. Rico</div></div>
-          <div class="bar-wrap"><div class="bar" id="bIndio" style="background:#d44f2e;height:4px"></div><div class="bar-label">P. Indio</div></div>
-          <div class="bar-wrap"><div class="bar" id="bSello" style="background:#c4860a;height:4px"></div><div class="bar-label">S. Oro</div></div>
-        </div>
-      </div>
-    </div>
+/* PAGES */
+.pages {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
 
-    <!-- ══ VENTAS ══ -->
-    <div class="page" id="page-ventas">
-      <div class="section-title">Ventas del día <span class="badge" id="badgeVentas">0</span></div>
-      <!-- Filtro: lista normal / ranking productos -->
-      <div class="tabs" style="margin-bottom:8px">
-        <button class="tab-btn active" id="ventaFiltroLista" onclick="setVentaFiltro('lista')">📋 Lista</button>
-        <button class="tab-btn" id="ventaFiltroRanking" onclick="setVentaFiltro('ranking')">🏆 Más vendidos</button>
-      </div>
-      <div id="listaVentas"></div>
-    </div>
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px 80px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
 
-    <!-- ══ GASTOS ══ -->
-    <div class="page" id="page-gastos">
-      <div class="section-title">Gastos del día <span class="badge" id="badgeGastos">0</span></div>
-      <!-- Resumen por categoría -->
-      <div class="card" style="padding:12px 16px;margin-bottom:8px" id="gastosCatResumen"></div>
-      <div id="listaGastos"></div>
-    </div>
+.page.active {
+  display: flex;
+}
 
-    <!-- ══ PEDIDOS ══ -->
-    <div class="page" id="page-pedidos">
-      <div class="section-title">Pedidos especiales</div>
-      <!-- Total del día (solo no cancelados) -->
-      <div class="card" style="padding:12px 16px;margin-bottom:4px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div>
-            <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:3px">Total pedidos del día</div>
-            <div style="font-size:11px;color:var(--text3)" id="pedidosDiaCnt">0 pedidos activos</div>
-          </div>
-          <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:600;color:var(--primary)" id="pedidosDiaTotal">$0.00</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:10px">
-          <div style="text-align:center">
-            <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#e8a020;margin-bottom:3px">Pollo Rico</div>
-            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:#e8a020" id="pedDiaPR">$0.00</div>
-          </div>
-          <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border)">
-            <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--red);margin-bottom:3px">Pollo Indio</div>
-            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:var(--red)" id="pedDiaPI">$0.00</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--gold);margin-bottom:3px">Sello de Oro</div>
-            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:var(--gold)" id="pedDiaSO">$0.00</div>
-          </div>
-        </div>
-      </div>
-      <!-- Tabs pendientes / completados / cancelados -->
-      <div class="tabs">
-        <button class="tab-btn active" id="tabPend" onclick="setPedidoTab('pendiente')">⏳ Pendientes</button>
-        <button class="tab-btn" id="tabDone" onclick="setPedidoTab('completado')">✅ Completados</button>
-        <button class="tab-btn" id="tabCanc" onclick="setPedidoTab('cancelado')">❌ Cancelados</button>
-      </div>
-      <div id="listaPedidos"></div>
-    </div>
+.page::-webkit-scrollbar {
+  display: none;
+}
 
-    <!-- ══ INVENTARIO ══ -->
-    <div class="page" id="page-inventario">
-      <div class="section-title">
-        Inventario
-        <button onclick="openProductoModal(null)" style="background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">+ Producto</button>
-      </div>
-      <!-- Total invertido -->
-      <div class="card" style="padding:12px 16px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:2px">💰 Total invertido en stock</div>
-            <div style="font-size:11px;color:var(--text3)" id="invProductosCnt">0 productos</div>
-          </div>
-          <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:700;color:var(--primary)" id="invTotalInvertido">$0.00</div>
-        </div>
-      </div>
-      <!-- Filtro stock -->
-      <div class="tabs" style="margin-bottom:8px">
-        <button class="tab-btn active" id="invFiltroTodos" onclick="setInvFiltro('todos')">Todos</button>
-        <button class="tab-btn" id="invFiltroAlto" onclick="setInvFiltro('alto')" style="color:var(--green)">↑ Alto</button>
-        <button class="tab-btn" id="invFiltroMedio" onclick="setInvFiltro('medio')" style="color:var(--orange)">~ Medio</button>
-        <button class="tab-btn" id="invFiltroBajo" onclick="setInvFiltro('bajo')" style="color:var(--red)">↓ Bajo</button>
-      </div>
-      <div id="listaInventario"></div>
-    </div>
+/* CARDS */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
 
-    <!-- ══ REPORTES ══ -->
-    <div class="page" id="page-reportes">
-      <div class="section-title">Reportes PDF</div>
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
 
-      <!-- VENTAS -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);margin:4px 0 6px;padding-left:2px">💰 Reportes de Ventas</div>
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📅</div>
-          <div><div style="font-size:13px;font-weight:600">Ventas del Día</div><div style="font-size:11px;color:var(--text3)">Ventas del día seleccionado</div></div>
-          <button onclick="generarReporte('ventasDiario')" style="margin-left:auto;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
-          <div><div style="font-size:13px;font-weight:600">Ventas de la Semana</div><div style="font-size:11px;color:var(--text3)">Ventas de la semana actual</div></div>
-          <button onclick="generarReporte('ventasSemanal')" style="margin-left:auto;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📈</div>
-          <div><div style="font-size:13px;font-weight:600">Ventas del Mes</div><div style="font-size:11px;color:var(--text3)">Ventas del mes en curso</div></div>
-          <button onclick="generarReporte('ventasMensual')" style="margin-left:auto;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-      </div>
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  min-width: 0;
+  overflow: hidden;
+}
 
-      <!-- PEDIDOS -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--orange);margin:4px 0 6px;padding-left:2px">📦 Reportes de Pedidos</div>
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#fef0d9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📅</div>
-          <div><div style="font-size:13px;font-weight:600">Pedidos del Día</div><div style="font-size:11px;color:var(--text3)">Pedidos del día seleccionado</div></div>
-          <button onclick="generarReporte('pedidosDiario')" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#fef0d9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
-          <div><div style="font-size:13px;font-weight:600">Pedidos de la Semana</div><div style="font-size:11px;color:var(--text3)">Pedidos de la semana actual</div></div>
-          <button onclick="generarReporte('pedidosSemanal')" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#fef0d9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📈</div>
-          <div><div style="font-size:13px;font-weight:600">Pedidos del Mes</div><div style="font-size:11px;color:var(--text3)">Pedidos del mes en curso</div></div>
-          <button onclick="generarReporte('pedidosMensual')" style="margin-left:auto;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-      </div>
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
-      <!-- INVENTARIO -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--blue);margin:4px 0 6px;padding-left:2px">📦 Reportes de Inventario</div>
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📅</div>
-          <div><div style="font-size:13px;font-weight:600">Inventario Diario</div><div style="font-size:11px;color:var(--text3)">Estado actual del inventario</div></div>
-          <button onclick="generarReporte('inventario')" style="margin-left:auto;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
-          <div><div style="font-size:13px;font-weight:600">Inventario Semanal</div><div style="font-size:11px;color:var(--text3)">Movimientos de inventario esta semana</div></div>
-          <button onclick="generarReporte('inventarioSemanal')" style="margin-left:auto;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📈</div>
-          <div><div style="font-size:13px;font-weight:600">Inventario Mensual</div><div style="font-size:11px;color:var(--text3)">Resumen de inventario del mes</div></div>
-          <button onclick="generarReporte('inventarioMensual')" style="margin-left:auto;background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-      </div>
+.stat-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-      <!-- GENERAL -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--primary);margin:4px 0 6px;padding-left:2px">📋 Reporte General</div>
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📅</div>
-          <div><div style="font-size:13px;font-weight:600">Reporte General Diario</div><div style="font-size:11px;color:var(--text3)">Ventas, gastos y pedidos del día</div></div>
-          <button onclick="generarReporte('diario')" style="margin-left:auto;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📊</div>
-          <div><div style="font-size:13px;font-weight:600">Reporte General Semanal</div><div style="font-size:11px;color:var(--text3)">Todas las áreas de la semana</div></div>
-          <button onclick="generarReporte('semanal')" style="margin-left:auto;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📈</div>
-          <div><div style="font-size:13px;font-weight:600">Reporte General Mensual</div><div style="font-size:11px;color:var(--text3)">Todas las áreas del mes</div></div>
-          <button onclick="generarReporte('mensual')" style="margin-left:auto;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Ver</button>
-        </div>
-      </div>
+.stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(15px, 4.5vw, 22px);
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-      <div class="card" style="background:var(--surface2);border-style:dashed">
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:18px">💡</span>
-          <div style="font-size:12px;color:var(--text2);line-height:1.6">
-            Al generar un reporte se abre una vista de impresión. Toca <strong>Guardar como PDF</strong> para descargarlo. Funciona en Chrome, Safari y cualquier navegador moderno.
-          </div>
-        </div>
-      </div>
+.stat-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-      <!-- RESPALDO -->
-      <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2);margin:4px 0 6px;padding-left:2px">🔒 Respaldo de datos</div>
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#f3e8ff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔧</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">Migrar datos históricos</div>
-            <div style="font-size:11px;color:var(--text3)">Clasifica gastos y corrige ganancia neta</div>
-          </div>
-          <button onclick="migrarDatos()" style="background:#7c3aed;color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Migrar</button>
-        </div>
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">☁️</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">Sincronizar ahora</div>
-            <div style="font-size:11px;color:var(--text3)">Fuerza la sincronización con Firebase</div>
-          </div>
-          <button onclick="_fbWrite();toast('☁ Sincronizando...')" style="background:#2563eb;color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Sync</button>
-        </div>
-        <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#e8f7f1;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⬇️</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">Exportar datos</div>
-            <div style="font-size:11px;color:var(--text3)">Descarga un .json con todos tus registros</div>
-          </div>
-          <button onclick="exportarDatos()" style="background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">Exportar</button>
-        </div>
-        <div style="padding:14px 16px;display:flex;align-items:center;gap:10px">
-          <div style="width:32px;height:32px;border-radius:8px;background:#fef0d9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">⬆️</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">Importar datos</div>
-            <div style="font-size:11px;color:var(--text3)">Restaura desde un archivo .json exportado</div>
-          </div>
-          <label style="background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0">
-            Importar<input type="file" accept=".json" onchange="importarDatos(event)" style="display:none">
-          </label>
-        </div>
-      </div>
-    </div>
+/* SEMANA CARD */
+.semana-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
 
-    <!-- ══ ENCARGOS ══ -->
-    <div class="page" id="page-encargos">
-      <div class="section-title">
-        Encargos
-        <button onclick="openEncargoModal(null)" style="background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">+ Encargo</button>
-      </div>
-      <div id="listaEncargos"></div>
-    </div>
+.semana-header {
+  padding: 12px 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-    <!-- ══ HISTORIAL ══ -->
-    <div class="page" id="page-historial">
-      <div class="section-title">Historial completo</div>
-      <div id="listaHistorial"></div>
-    </div>
+.semana-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-  </div><!-- /pages -->
+.semana-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 12px 16px 14px;
+  gap: 6px;
+}
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-btn active" onclick="showPage('resumen',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>Resumen</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('ventas',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      <span>Ventas</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('gastos',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-      <span>Gastos</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('pedidos',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-      <span>Pedidos</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('inventario',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      <span>Inventario</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('encargos',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
-      <span>Encargos</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('historial',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
-      <span>Historial</span>
-    </button>
-    <button class="nav-btn" onclick="showPage('reportes',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>Reportes</span>
-    </button>
-  </div>
-</div>
+.semana-stat {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+}
 
-<!-- ═══ MODAL: FONDO INICIAL (HISTÓRICO, UNA SOLA VEZ) ═══ -->
-<div class="modal-overlay" id="fondoInicialModal" onclick="overlayClose(event,'fondoInicialModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Capital inicial del negocio</div>
-    <div class="form-section">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">⚠ Este dato es histórico y no se podrá modificar después de guardarlo. Registra el monto exacto con el que abriste el negocio.</div>
-      <div>
-        <label class="form-label">Monto ($)</label>
-        <input class="form-input" type="number" id="fondoInicialInput" placeholder="Ej: 302.50" step="0.01" min="0">
-      </div>
-      <div>
-        <label class="form-label">Fecha de apertura</label>
-        <input class="form-input" type="date" id="fondoInicialDate">
-      </div>
-      <button class="btn-primary" onclick="saveFondoInicial()">✓ Registrar (permanente)</button>
-    </div>
-  </div>
-</div>
+.semana-stat-label {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 5px;
+}
 
-<!-- ═══ MODAL: FONDO INICIAL ═══ -->
+.semana-stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px;
+  font-weight: 500;
+}
 
-<!-- ═══ MODAL: EFECTIVO DEL DÍA ═══ -->
-<div class="modal-overlay" id="fondoModal" onclick="overlayClose(event,'fondoModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Efectivo del día</div>
-    <div class="form-section">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Monto de dinero con el que cuentas hoy. Solo visible en el encabezado.</div>
-      <label class="form-label">Monto ($)</label>
-      <input class="form-input" type="number" id="fondoInput" placeholder="0.00" step="0.01" min="0">
-      <button class="btn-primary" onclick="saveFondo()">✓ Guardar</button>
-    </div>
-  </div>
-</div>
+.semana-days {
+  display: flex;
+  gap: 3px;
+  padding: 0 16px 12px;
+}
 
-<!-- ═══ MODAL: DETALLE VENTA ═══ -->
-<div class="modal-overlay" id="detalleVentaModal" onclick="overlayClose(event,'detalleVentaModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Detalle de venta</div>
-    <div class="form-section" id="detalleVentaBody"></div>
-  </div>
-</div>
+.semana-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
 
-<!-- ═══ MODAL: ENCARGO ═══ -->
-<div class="modal-overlay" id="encargoModal" onclick="overlayClose(event,'encargoModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="encargoModalTitle">Nuevo encargo</div>
-    <div class="form-section">
-      <input type="hidden" id="encargoId">
-      <div>
-        <label class="form-label">Cliente</label>
-        <input class="form-input" type="text" id="encargoCliente" placeholder="Nombre del cliente">
-      </div>
-      <div>
-        <label class="form-label">Tipo de productos</label>
-        <input class="form-input" type="text" id="encargoProductos" placeholder="Ej: Pollo entero, tamales, etc.">
-      </div>
-      <div>
-        <label class="form-label">Fecha de entrega</label>
-        <input class="form-input" type="date" id="encargoFecha">
-      </div>
-      <div class="form-row">
-        <div>
-          <label class="form-label">Costo ($)</label>
-          <input class="form-input" type="number" id="encargoCosto" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div>
-          <label class="form-label">Anticipo ($)</label>
-          <input class="form-input" type="number" id="encargoAnticipo" placeholder="0.00" step="0.01" min="0">
-        </div>
-      </div>
-      <div>
-        <label class="form-label">Estado</label>
-        <select class="form-input" id="encargoEstado">
-          <option value="pendiente">⏳ Pendiente</option>
-          <option value="listo">✅ Listo para entregar</option>
-          <option value="entregado">📦 Entregado</option>
-          <option value="cancelado">❌ Cancelado</option>
-        </select>
-      </div>
-      <div>
-        <label class="form-label">Notas <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input class="form-input" type="text" id="encargoNotas" placeholder="Detalles adicionales...">
-      </div>
-      <button class="btn-primary" onclick="saveEncargo()">✓ Guardar encargo</button>
-    </div>
-  </div>
-</div>
+.semana-day-label {
+  font-size: 8px;
+  color: var(--text3);
+  text-transform: uppercase;
+  font-weight: 600;
+}
 
-<!-- FAB -->
-<button class="fab" id="fabBtn" onclick="openAddModal()">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-</button>
+.semana-day-bar-wrap {
+  height: 36px;
+  display: flex;
+  align-items: flex-end;
+}
 
-<!-- ═══ MODAL: AGREGAR REGISTRO ═══ -->
-<div class="modal-overlay" id="addModal" onclick="overlayClose(event,'addModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Nuevo registro</div>
-    <div class="form-section">
-      <div>
-        <label class="form-label">Tipo</label>
-        <div class="type-toggle">
-          <button class="type-btn active" id="tBtnVenta" onclick="setTipo('venta')">💰 Venta</button>
-          <button class="type-btn" id="tBtnGasto" onclick="setTipo('gasto')">📋 Gasto</button>
-          <button class="type-btn" id="tBtnPedido" onclick="setTipo('pedido')">📦 Pedido</button>
-        </div>
-      </div>
+.semana-day-bar {
+  width: 10px;
+  border-radius: 2px 2px 0 0;
+  min-height: 3px;
+}
 
-      <!-- VENTA: selector producto -->
-      <div id="ventaProductoWrap">
-        <label class="form-label">Producto del inventario <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <select class="form-input" id="ventaProductoSel" onchange="onProductoSelChange()">
-          <option value="">— Seleccionar producto —</option>
-        </select>
-        <div id="ventaStockInfo" style="font-size:12px;color:var(--text3);margin-top:4px;display:none"></div>
-      </div>
+.semana-day-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 2px;
+}
 
-      <!-- GASTO: categoría -->
-      <div id="gastoWrap" style="display:none">
-        <label class="form-label">Categoría del gasto</label>
-        <select class="form-input" id="gastoCat">
-          <option value="pasaje">🚌 Pasajes / Transporte</option>
-          <option value="alimentacion">🍽 Alimentación</option>
-          <option value="alcaldia">🏛 Impuesto Alcaldía</option>
-          <option value="electricidad">⚡ Energía Eléctrica</option>
-          <option value="otro">📋 Otro gasto operativo</option>
-        </select>
-      </div>
+/* BALANCE */
+.balance-card {
+  background: var(--primary);
+  border-radius: var(--radius);
+  padding: 18px;
+  color: #fff;
+}
 
-      <!-- PEDIDO: tipo y productos -->
-      <div id="pedidoWrap" style="display:none">
-          <label class="form-label">Proveedor del pedido</label>
-          <select class="form-input" id="pedidoTipo">
-            <option value="Pollo Rico">Pollo Rico</option>
-            <option value="Pollo Indio">Pollo Indio</option>
-            <option value="Sello de Oro">Sello de Oro</option>
-          </select>
-        </div>
+.balance-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 6px;
+}
 
-        <!-- Selector de producto para agregar al pedido -->
-        <div style="margin-bottom:8px">
-          <label class="form-label">Producto del pedido <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-          <select class="form-input" id="pedidoProductoSel" onchange="onPedidoProductoChange()">
-            <option value="">— Sin producto específico —</option>
-          </select>
-          <div id="pedidoStockInfo" style="display:none;font-size:11px;color:var(--text3);margin-top:4px;padding:6px 8px;background:var(--surface2);border-radius:6px"></div>
-        </div>
+.balance-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
 
-        <!-- Items acumulados del pedido -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <label class="form-label" style="margin:0">Productos del pedido</label>
-          <button type="button" onclick="agregarItemPedido()" style="background:var(--orange);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">+ Agregar</button>
-        </div>
-        <div id="pedidoItemsList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Agrega cada producto por separado. El total se calcula automáticamente.</div>
-      </div>
+.balance-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-      <div>
-        <label class="form-label">Descripción</label>
-        <input class="form-input" type="text" id="fDesc" placeholder="Ej: Almuerzo, Transporte...">
-      </div>
-      <div class="form-row">
-        <div>
-          <label class="form-label">Cantidad</label>
-          <input class="form-input" type="number" id="fCant" placeholder="1" min="0.01" step="0.01" value="1" oninput="onCantChange()">
-        </div>
-        <div>
-          <label class="form-label">Monto ($)</label>
-          <input class="form-input" type="number" id="fMonto" placeholder="0.00" step="0.01" min="0.01">
-        </div>
-      </div>
+.balance-tag {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #fff;
+}
 
-      <!-- MULTI-PRODUCTO: lista de productos en la venta -->
-      <div id="ventaItemsWrap" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <label class="form-label" style="margin:0">Productos en esta venta</label>
-          <button type="button" onclick="agregarItemVenta()" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">+ Agregar</button>
-        </div>
-        <div id="ventaItemsList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-        <div style="font-size:11px;color:var(--text3)">El monto total se calcula automáticamente.</div>
-      </div>
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  margin-top: 12px;
+  overflow: hidden;
+}
 
-      <button class="btn-primary" onclick="saveRecord()">✓ Guardar registro</button>
-    </div>
-  </div>
-</div>
+.progress-fill {
+  height: 100%;
+  background: #e8a020;
+  border-radius: 2px;
+  transition: width 0.4s;
+}
 
-<!-- ═══ MODAL: PRODUCTO ═══ -->
-<div class="modal-overlay" id="productoModal" onclick="overlayClose(event,'productoModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="productoModalTitle">Nuevo producto</div>
-    <div class="form-section">
-      <input type="hidden" id="pId">
-      <div>
-        <label class="form-label">Nombre del producto</label>
-        <input class="form-input" type="text" id="pNombre" placeholder="Ej: Arroz, Pollo, Refresco...">
-      </div>
-      <div class="form-row">
-        <div>
-          <label class="form-label">Cantidad inicial</label>
-          <input class="form-input" type="number" id="pCantidad" placeholder="0" min="0">
-        </div>
-        <div>
-          <label class="form-label">Unidad</label>
-          <select class="form-input" id="pUnidad">
-            <option value="unidad">unidad</option>
-            <option value="lb">lb</option>
-            <option value="kg">kg</option>
-            <option value="litro">litro</option>
-            <option value="caja">caja</option>
-            <option value="bolsa">bolsa</option>
-            <option value="docena">docena</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <label class="form-label">Precio costo ($)</label>
-          <input class="form-input" type="number" id="pPrecioCosto" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <div>
-          <label class="form-label">Precio venta ($)</label>
-          <input class="form-input" type="number" id="pPrecioVenta" placeholder="0.00" step="0.01" min="0">
-        </div>
-      </div>
-      <div>
-        <label class="form-label">Fecha de ingreso</label>
-        <input class="form-input" type="date" id="pFecha">
-      </div>
-      <div>
-        <label class="form-label">Notas <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
-        <input class="form-input" type="text" id="pNotas" placeholder="Proveedor, lote, etc.">
-      </div>
-      <button class="btn-primary" onclick="saveProducto()">✓ Guardar producto</button>
-    </div>
-  </div>
-</div>
+/* PEDIDOS RESUMEN */
+.pedido-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  margin-bottom: 8px;
+}
 
-<!-- ═══ MODAL: AJUSTE STOCK ═══ -->
-<div class="modal-overlay" id="stockModal" onclick="overlayClose(event,'stockModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="stockModalTitle">Ajustar stock</div>
-    <div class="form-section">
-      <input type="hidden" id="sId">
-      <div class="info-box">Stock actual: <strong id="sActual" style="font-family:'DM Mono',monospace"></strong></div>
-      <div>
-        <label class="form-label">Operación</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <button class="type-btn active" id="sOpSumar" onclick="setStkOp('sumar')">➕ Sumar</button>
-          <button class="type-btn" id="sOpRestar" onclick="setStkOp('restar')">➖ Restar</button>
-        </div>
-      </div>
-      <div>
-        <label class="form-label">Cantidad</label>
-        <input class="form-input" type="number" id="sCant" placeholder="0" min="1" value="1">
-      </div>
-      <button class="btn-primary" onclick="saveStockAjuste()">✓ Aplicar ajuste</button>
-    </div>
-  </div>
-</div>
+.pedido-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
 
-<!-- ═══ MODAL: FECHA ═══ -->
-<div class="modal-overlay" id="dateModal" onclick="overlayClose(event,'dateModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Seleccionar fecha</div>
-    <div class="form-section">
-      <input class="form-input" type="date" id="dateInput" style="font-size:16px;text-align:center">
-      <button class="btn-primary" onclick="applyDate()">Aplicar</button>
-    </div>
-  </div>
-</div>
+.pedido-name {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
 
-<div class="notif" id="notif"></div>
+.pedido-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
 
-<!-- PRINT FRAME -->
-<div id="rpt-frame"></div>
+/* CHART */
+.chart-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 14px;
+}
 
-<script src="app.js"></script>
-</body>
-</html>
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 90px;
+}
+
+.bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.4s;
+}
+
+.bar-label {
+  font-size: 9px;
+  color: var(--text3);
+  text-align: center;
+}
+
+/* TX LIST */
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.tx-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.tx-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-meta {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.tx-amount {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tx-del {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 6px;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.tx-del:active {
+  color: var(--red);
+}
+
+/* PEDIDO ESPECIAL CARD */
+.ped-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.ped-card-top {
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ped-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ped-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.ped-card-meta {
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.5;
+}
+
+.ped-card-amount {
+  font-family: 'DM Mono', monospace;
+  font-size: 16px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.ped-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.ped-status-pending {
+  background: #fef9e7;
+  color: #b7791f;
+  border: 1px solid #f6e05e;
+}
+
+.ped-status-done {
+  background: #e8f7f1;
+  color: #0f6e56;
+  border: 1px solid #9ae6b4;
+}
+
+.ped-status-cancelled {
+  background: #fdeee9;
+  color: #993c1d;
+  border: 1px solid #fca5a5;
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.ped-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+
+.ped-btn {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.ped-btn:active {
+  opacity: 0.8;
+}
+
+.ped-btn-complete {
+  background: #e8f7f1;
+  color: #0f6e56;
+  border: 1px solid #9ae6b4;
+}
+
+.ped-btn-cancel {
+  background: #fdeee9;
+  color: #993c1d;
+  border: 1px solid #fca5a5;
+}
+
+.ped-btn-del {
+  background: var(--surface);
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+
+/* PRODUCTO CARD */
+.inv-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.inv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inv-card-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.inv-card-date {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.inv-card-body {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.inv-stat {
+  text-align: center;
+}
+
+.inv-stat-label {
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+.inv-stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.inv-card-footer {
+  padding: 8px 16px;
+  background: var(--surface2);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.inv-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+.inv-btn-danger {
+  border-color: #fca5a5;
+  color: var(--red);
+  background: #fff5f5;
+}
+
+.inv-btn-primary {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #e8f7f1;
+}
+
+.stock-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stock-ok {
+  background: #e8f7f1;
+  color: #0f6e56;
+}
+
+.stock-low {
+  background: #fef0d9;
+  color: #854f0b;
+}
+
+.stock-out {
+  background: #fdeee9;
+  color: #993c1d;
+}
+
+/* EMPTY */
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text3);
+}
+
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 7px 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* FORM */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input:focus {
+  border-color: var(--primary);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 4px;
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+}
+
+.type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.type-btn {
+  padding: 10px 6px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.type-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* HISTORIAL */
+.hist-day {
+  margin-bottom: 20px;
+}
+
+.hist-day-header {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.hist-summary {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.hist-chip {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* NAV */
+.bottom-nav {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text3);
+  transition: color 0.2s;
+}
+
+.nav-btn svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.8;
+}
+
+.nav-btn span {
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.nav-btn.active {
+  color: var(--primary);
+}
+
+/* FAB */
+.fab {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  background: var(--primary);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(10, 61, 46, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  z-index: 50;
+}
+
+.fab:active {
+  transform: scale(0.92);
+}
+
+/* MODALS */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px max(28px, env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 430px;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.modal::-webkit-scrollbar {
+  display: none;
+}
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.info-box {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+/* UTILS */
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.badge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.card-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif {
+  position: fixed;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+}
+
+.notif.show {
+  opacity: 1;
+}
+
+/* PRINT / PDF STYLES */
+@media print {
+  body {
+    background: #fff !important;
+    overflow: auto !important;
+    font-family: Arial, sans-serif !important;
+  }
+  #app, .fab, .bottom-nav, .modal-overlay, .notif {
+    display: none !important;
+  }
+  #rpt-frame {
+    display: block !important;
+  }
+  .rpt-page {
+    page-break-after: always;
+    padding: 0 !important;
+  }
+  .rpt-page:last-child {
+    page-break-after: avoid;
+  }
+}
+
+#rpt-frame {
+  display: none;
+}
+
+/* Reporte interno */
+.rpt-wrap {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #1a1a1a;
+  background: #fff;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 28px;
+}
+
+.rpt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #0a3d2e;
+}
+
+.rpt-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rpt-logo-box {
+  width: 44px;
+  height: 44px;
+  background: #0a3d2e;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.rpt-biz-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0a3d2e;
+}
+
+.rpt-biz-sub {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.rpt-meta {
+  text-align: right;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.8;
+}
+
+.rpt-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0a3d2e;
+  margin: 0 0 4px;
+}
+
+.rpt-subtitle {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 24px;
+}
+
+.rpt-section {
+  margin-bottom: 22px;
+}
+
+.rpt-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #0a3d2e;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e0ddd8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rpt-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rpt-kpi-row-4 {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.rpt-kpi {
+  background: #f8f7f3;
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 3px solid #0a3d2e;
+}
+
+.rpt-kpi-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 5px;
+}
+
+.rpt-kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+}
+
+.rpt-kpi-sub {
+  font-size: 10px;
+  color: #888;
+  margin-top: 3px;
+}
+
+.rpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.rpt-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rpt-table th {
+  background: #0a3d2e;
+  color: #fff;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.rpt-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+.rpt-table tr:nth-child(even) td {
+  background: #fafaf8;
+}
+
+.rpt-table tr:last-child td {
+  border-bottom: none;
+}
+
+.rpt-table .num {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.rpt-table .center {
+  text-align: center;
+}
+
+.rpt-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.rpt-tag-green {
+  background: #e8f7f1;
+  color: #0f6e56;
+}
+
+.rpt-tag-red {
+  background: #fdeee9;
+  color: #993c1d;
+}
+
+.rpt-tag-yellow {
+  background: #fef9e7;
+  color: #b7791f;
+}
+
+.rpt-tag-grey {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.rpt-footer {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid #e0ddd8;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #aaa;
+}
+
+.rpt-day-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr 1fr;
+  gap: 0;
+  font-size: 12px;
+  border-bottom: 1px solid #eee;
+  padding: 6px 10px;
+  align-items: center;
+}
+
+.rpt-day-row.header {
+  background: #f0ede7;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #555;
+}
+
+.rpt-inv-row {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 0.8fr 0.9fr 0.9fr 0.8fr 0.8fr;
+  gap: 0;
+  font-size: 11px;
+  border-bottom: 1px solid #eee;
+  padding: 6px 10px;
+  align-items: center;
+}
+
+.rpt-inv-row.header {
+  background: #f0ede7;
+  font-weight: 700;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #555;
+}
+
+.rpt-prov-block {
+  background: #f8f7f3;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border-left: 3px solid #e8a020;
+}
+
+.rpt-prov-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #0a3d2e;
+}
+
+.no-break {
+  page-break-inside: avoid;
+}
